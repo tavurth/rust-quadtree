@@ -16,7 +16,7 @@ use std::fmt;
 ///
 /// use quadtree::{QuadTree, Bounded, Bounds};
 ///
-/// #[deriving(Eq)]
+/// #[derive(Eq)]
 /// struct Rect {
 ///     x: f32,
 ///     y: f32,
@@ -43,16 +43,16 @@ use std::fmt;
 /// }
 /// ```
 pub struct QuadTree<'a, T> {
-    capacity: uint,
-    depth: uint,
-    max_depth: uint,
+    depth: u32,
+    capacity: u32,
+    max_depth: u32,
     bounds: Bounds,
     elements: Vec<&'a T>,
-    children: Option<[Box<QuadTree<'a, T>>, .. 4]>,
+    children: Option<[Box<QuadTree<'a, T>>; 4]>,
 }
 
 /// A bounded area represented by x, y, width, and height.
-#[deriving(Eq, Show)]
+#[derive(Eq, Debug)]
 pub struct Bounds {
     /// x coordinate
     pub x: f32,
@@ -70,12 +70,12 @@ pub trait Bounded {
     fn bounds(&self) -> Bounds;
 }
 
-#[deriving(Eq)]
+#[derive(Eq)]
 enum Quadrant { TL, TR, BR, BL }
 
 impl<'a, T: Bounded> QuadTree<'a, T> {
     /// Constructs a new quadtree containing the specified bounds.
-    pub fn new(bounds: Bounds) -> QuadTree<T> {
+    pub fn new(bounds: Bounds) -> QuadTree<'a, T> {
         QuadTree {
             capacity: 4,
             max_depth: 10,
@@ -102,7 +102,7 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
     pub fn insert(&mut self, element: &'a T) {
         match (self.get_quadrant(element), self) {
             (Some(q), &QuadTree{children: Some(ref mut children), .. }) => {
-                children[q as uint].insert(element);
+                children[q as u32].insert(element);
             },
             (None, _self@&QuadTree{children: Some(_), .. }) => {
                 _self.elements.push(element);
@@ -143,7 +143,7 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
             Some(_) => unreachable!(),
             None => {
                 let mut children = [
-                    box QuadTree {
+                    Box::new(QuadTree {
                         capacity: self.capacity,
                         depth: self.depth + 1,
                         max_depth: self.max_depth,
@@ -152,8 +152,9 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
                                        width: self.bounds.width / 2.0,
                                        height: self.bounds.height / 2.0 },
                         elements: Vec::new(),
-                        children: None},
-                    box QuadTree{
+                        children: None }),
+
+                    Box::new(QuadTree {
                         capacity: self.capacity,
                         depth: self.depth + 1,
                         max_depth: self.max_depth,
@@ -162,8 +163,9 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
                                        width: self.bounds.width / 2.0,
                                        height: self.bounds.height / 2.0},
                         elements: Vec::new(),
-                        children: None},
-                    box QuadTree{
+                        children: None }),
+
+                    Box::new(QuadTree {
                         capacity: self.capacity,
                         depth: self.depth + 1,
                         max_depth: self.max_depth,
@@ -172,8 +174,9 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
                                        width: self.bounds.width / 2.0,
                                        height: self.bounds.height / 2.0},
                         elements: Vec::new(),
-                        children: None},
-                    box QuadTree{
+                        children: None }),
+
+                    Box::new(QuadTree {
                         capacity: self.capacity,
                         depth: self.depth + 1,
                         max_depth: self.max_depth,
@@ -182,13 +185,14 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
                                        width: self.bounds.width / 2.0,
                                        height: self.bounds.height / 2.0},
                         elements: Vec::new(),
-                        children: None}
-                    ];
+                        children: None
+                    })
+            ];
 
                 let mut new_elements: Vec<&T> = Vec::new();
                 for &element in self.elements.iter() {
                     match self.get_quadrant(element) {
-                        Some(i) => children[i as uint].insert(element),
+                        Some(i) => children[i as u32].insert(element),
                         None => new_elements.push(element)
                     };
                 }
@@ -212,10 +216,10 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
         let fits_bottom_half = r.bounds().y >= half_height &&
             r.bounds().y + r.bounds().height < self.bounds.y + self.bounds.height;
 
-        if fits_top_half && fits_left_half { Some(TL) }
-        else if fits_top_half && fits_right_half { Some(TR) }
-        else if fits_bottom_half && fits_right_half { Some(BR) }
-        else if fits_bottom_half && fits_left_half { Some(BL) }
+        if fits_top_half && fits_left_half { Some(Quadrant::TL) }
+        else if fits_top_half && fits_right_half { Some(Quadrant::TR) }
+        else if fits_bottom_half && fits_right_half { Some(Quadrant::BR) }
+        else if fits_bottom_half && fits_left_half { Some(Quadrant::BL) }
         else { None }
     }
 
@@ -227,7 +231,7 @@ impl<'a, T: Bounded> QuadTree<'a, T> {
 }
 
 impl<'a, T: Bounded> Container for QuadTree<'a, T> {
-    fn len(&self) -> uint {
+    fn len(&self) -> u32 {
         let mut count = self.elements.len();
         match self.children {
             Some(ref children) => {
@@ -259,10 +263,10 @@ impl<'a, T: Bounded> Mutable for QuadTree<'a, T> {
     }
 }
 
-impl<'a, T: Bounded + fmt::Show> fmt::Show for QuadTree<'a, T> {
+impl<'a, T: Bounded + fmt::Display> fmt::Display for QuadTree<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = StrBuf::new();
-        for _ in range(0, self.depth) { s.push_str("    ") }
+        let mut s = String::new();
+        for _ in 0..self.depth { s.push_str("    ") }
 
         s.push_str(format!("{}", self.elements));
 
@@ -284,13 +288,13 @@ impl<'a, T: Bounded + fmt::Show> fmt::Show for QuadTree<'a, T> {
 pub struct Items<'a, T> {
     root: &'a QuadTree<'a, T>,
     quadrants: Vec<Quadrant>,
-    element_index: uint
+    element_index: u32
 }
 
 /// An iterator over elements near a given query element.
 pub struct QueryItems<'a, T> {
     qt: &'a QuadTree<'a, T>,
-    index: uint,
+    index: u32,
     element: &'a T,
     next_qts: Vec<&'a QuadTree<'a, T>>
 }
@@ -300,7 +304,7 @@ impl<'a, T: Bounded> Iterator<&'a T> for Items<'a, T> {
         let mut node = self.root;
         for &quadrant in self.quadrants.iter() {
             match &node.children {
-                &Some(ref children) => node = &*children[quadrant as uint],
+                &Some(ref children) => node = &*children[quadrant as u32],
                 &None => unreachable!()
             }
         }
@@ -313,19 +317,24 @@ impl<'a, T: Bounded> Iterator<&'a T> for Items<'a, T> {
 
         match node.children {
             Some(_) => {
-                self.quadrants.push(TL);
+                self.quadrants.push(Quadrant::TL);
                 self.element_index = 0;
                 self.next()
             },
             None => {
-                let mut last_index = BL;
-                while last_index == BL {
+                let mut last_index = Quadrant::BL;
+                while last_index == Quadrant::BL {
                     match self.quadrants.pop() {
                         Some(i) => last_index = i,
                         None => return None
                     };
                 }
-                self.quadrants.push(match last_index { TL => TR, TR => BR, BR => BL, BL => unreachable!() });
+                self.quadrants.push(match last_index {
+                    Quadrant::TL => Quadrant::TR,
+                    Quadrant::TR => Quadrant::BR,
+                    Quadrant::BR => Quadrant::BL,
+                    Quadrant::BL => unreachable!()
+                });
                 self.element_index = 0;
                 self.next()
             }
@@ -343,7 +352,7 @@ impl<'a, T: Bounded> Iterator<&'a T> for QueryItems<'a, T> {
 
         match (self.qt.get_quadrant(self.element), self) {
             (Some(q), ref mut _self@&QueryItems{qt: &QuadTree{children: Some(ref children), ..}, ..}) => {
-                _self.qt = &*children[q as uint];
+                _self.qt = &*children[q as u32];
                 _self.index = 0;
                 _self.next()
             },
@@ -353,10 +362,10 @@ impl<'a, T: Bounded> Iterator<&'a T> for QueryItems<'a, T> {
                 if !_self.qt.contains(_self.element) {
                     return None;
                 }
-                _self.qt = &*children[TL as uint];
-                _self.next_qts.push(&*children[TR as uint]);
-                _self.next_qts.push(&*children[BR as uint]);
-                _self.next_qts.push(&*children[BL as uint]);
+                _self.qt = &*children[Quadrant::TL as u32];
+                _self.next_qts.push(&*children[Quadrant::TR as u32]);
+                _self.next_qts.push(&*children[Quadrant::BR as u32]);
+                _self.next_qts.push(&*children[Quadrant::BL as u32]);
                 _self.index = 0;
                 _self.next()
             }
@@ -375,7 +384,7 @@ impl<'a, T: Bounded> Iterator<&'a T> for QueryItems<'a, T> {
 }
 
 #[cfg(test)]
-#[deriving(Eq, Show)]
+#[derive(Eq, Debug)]
 struct TestRect {
     x: f32,
     y: f32,
