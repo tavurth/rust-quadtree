@@ -1,8 +1,8 @@
 [package]
 license = "MIT"
 version = "0.1.0"
+name = "quadtree"
 readme = "README.md"
-name = "rust-quadtree"
 documentation = "https://docs.rs/sfml"
 keywords = ["quadtree", "tree", "game"]
 repository = "https://github.com/dmac/rust-quadtree"
