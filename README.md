@@ -1,3 +1,16 @@
+# DEPRECIATION
+
+## No longer maintained
+
+This crate is very old, and I was unable to bring it up to date.
+
+The issues I'm facing now are the following:
+
+- `impl<'a, T: Bounded> Mutable for QuadTree<'a, T>`
+- `impl<'a, T: Bounded> Container for QuadTree<'a, T>`
+
+I'm not sure yet how to work past this old rust code, perhaps I'll come back to it in the future.
+
 # rust-quadtree
 
 A quadtree library for searching elements in a 2D space.
