@@ -1,0 +1,10 @@
+[package]
+license = "MIT"
+version = "0.1.0"
+readme = "README.md"
+name = "rust-quadtree"
+documentation = "https://docs.rs/sfml"
+keywords = ["quadtree", "tree" "game"]
+repository = "https://github.com/dmac/rust-quadtree"
+authors = ["Daniel MacDougall <dmacdougall@gmail.com>"]
+description = "A quadtree library for searching elements in a 2D space."
